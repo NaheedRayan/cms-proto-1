@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
   const { data } = await supabase.auth.getClaims()
   const user = data?.claims
 
-  console.log("🎾🎾🎾 Get Claims Processing time: ", performance.now() - startTime)
+  console.log(`🎾🎾🎾 [${request.nextUrl.pathname}] Get Claims Processing time: `, performance.now() - startTime)
 
   if (
     !user &&
