@@ -29,13 +29,15 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const startTime = performance.now();
   // IMPORTANT: Do not run code between createServerClient and
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
+  const startTime = performance.now();
   const { data } = await supabase.auth.getClaims()
   const user = data?.claims
+
+  console.log("🎾🎾🎾 Get Claims Processing time: ", performance.now() - startTime)
 
   if (
     !user &&
@@ -75,3 +77,5 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
+
+
