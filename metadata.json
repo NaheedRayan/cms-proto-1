@@ -1,0 +1,5 @@
+{
+  "name": "CMS",
+  "description": "A headless, minimalist e-commerce admin panel styled with Tailwind and designed for Supabase integration.",
+  "requestFramePermissions": []
+}
