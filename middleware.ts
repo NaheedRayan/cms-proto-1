@@ -1,22 +1,47 @@
-import { type NextRequest } from 'next/server';
-import { updateSession } from '@/lib/supabase/proxy';
-import {createClient} from "@/lib/supabase/server"
-import { NextResponse } from 'next/server';
-import { time } from 'console';
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({
+    request,
+  })
+
   // With Fluid compute, don't put this client in a global environment
   // variable. Always create a new one on each request.
-  
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
   const startTime = performance.now();
-  const supabase = await createClient();
-  const { data } = await (await supabase).auth.getClaims()
+  // IMPORTANT: Do not run code between createServerClient and
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
+  // issues with users being randomly logged out.
+
+  const { data } = await supabase.auth.getClaims()
   const user = data?.claims
-  const endTime = performance.now();
-  console.log(`***Time taken: ${endTime - startTime} ms`);
 
-
-  if (!user) {
+  if (
+    !user &&
+    !request.nextUrl.pathname.startsWith('/auth')
+  ) {
+    // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     return NextResponse.redirect(url)
@@ -35,6 +60,7 @@ export async function middleware(request: NextRequest) {
   // If this is not done, you may be causing the browser and server to go out
   // of sync and terminate the user's session prematurely!
 
+  return supabaseResponse
 }
 
 export const config = {

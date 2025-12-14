@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { PlusCircle } from 'lucide-react';
-import { getSupabaseServerClient } from '@/lib/supabase/server-client';
+import { createClient } from '@/lib/supabase/server';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { ProductsTable } from '@/components/ProductsTable';
 
 export default async function ProductsPage() {
-  const supabase = getSupabaseServerClient();
-  const { data: products } = await supabase
+  const supabase = await createClient();
+  const { data: productsData } = await supabase
     .from('products')
     .select(
       `
@@ -21,6 +21,11 @@ export default async function ProductsPage() {
     `,
     )
     .order('updated_at', { ascending: false });
+
+  const products = productsData?.map((product) => ({
+    ...product,
+    category: Array.isArray(product.category) ? product.category[0] : product.category,
+  }));
 
   return (
     <div className="space-y-6">
@@ -50,6 +55,7 @@ export default async function ProductsPage() {
     </div>
   );
 }
+
 
 
 

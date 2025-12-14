@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { PlusCircle } from 'lucide-react';
-import { getSupabaseServerClient } from '@/lib/supabase/server-client';
+import { createClient } from '@/lib/supabase/server';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge } from '@/components/ui';
 
 interface Billboard {
@@ -11,7 +11,7 @@ interface Billboard {
 }
 
 export default async function BillboardsPage() {
-  const supabase = getSupabaseServerClient();
+  const supabase = await createClient();
   const { data: billboards } = await supabase
     .from('billboards')
     .select('id, label, image_url, created_at')

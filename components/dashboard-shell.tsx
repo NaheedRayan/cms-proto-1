@@ -84,7 +84,7 @@ export function DashboardShell({ children, settings }: DashboardShellProps) {
   return (
     <div className="flex min-h-screen flex-col md:flex-row bg-background text-foreground">
       {/* Sidebar */}
-      <aside className="w-full md:w-64 border-r bg-muted/20 flex flex-col">
+      <aside className="w-full md:w-64 border-r bg-muted/20 flex flex-col h-screen sticky top-0">
         <div className="p-6 flex items-center gap-2 border-b">
           <div className="h-8 w-8 rounded-lg bg-white border flex items-center justify-center overflow-hidden shrink-0">
             {settings.logo_url ? (
