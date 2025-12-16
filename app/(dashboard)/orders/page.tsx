@@ -1,13 +1,18 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/client';
 import { OrdersClient } from '@/components/orders-client';
 
 export default async function OrdersPage() {
-  const supabase = await createClient();
+  const supabase = createClient();
   
-  const { data: orders } = await supabase
+  const { data: ordersData } = await supabase
     .from('orders')
     .select('*')
     .order('created_at', { ascending: false });
+
+  const orders = ordersData?.map((order) => ({
+    ...order,
+    customer: Array.isArray(order.customer) ? order.customer[0] : order.customer,
+  }));
 
   return (
     <div className="space-y-6">

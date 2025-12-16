@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/client';
 import { ProductForm } from '@/components/ProductForm';
 
 interface PageProps {
@@ -7,7 +7,7 @@ interface PageProps {
 }
 
 export default async function EditProductPage({ params }: PageProps) {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const [productRes, categoriesRes, colorsRes, sizesRes] = await Promise.all([
     supabase

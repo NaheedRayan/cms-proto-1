@@ -58,8 +58,14 @@ export default function LoginPage() {
       }
 
       // If sign-in succeeded, redirect to the dashboard
-      router.replace(redirectTo);
-      router.refresh();
+      // 🔑 ensure cookies are flushed
+      // await supabase.auth.getSession();
+
+      // 🔑 force full reload so middleware sees cookies
+      // 🔑 force full reload so middleware sees cookies
+    window.location.href = redirectTo;
+      // router.replace(redirectTo);
+      // router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to sign in');
     } finally {

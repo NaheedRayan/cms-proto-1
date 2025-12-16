@@ -1,11 +1,11 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/client';
 import { InventoryClient, Product } from '@/components/inventory-client';
 
 export default async function InventoryPage() {
-  const supabase = await createClient();
+  const supabase = createClient();
   
   // Fetch products with variants
-  const { data: products } = await supabase
+  const { data: productsData } = await supabase
     .from('products')
     .select(`
       id,
@@ -26,6 +26,11 @@ export default async function InventoryPage() {
     supabase.from('sizes').select('id, name, value').order('name'),
     supabase.from('colors').select('id, name, value').order('name'),
   ]);
+
+  const products = productsData?.map((product) => ({
+    ...product,
+    product_variants: Array.isArray(product.product_variants) ? product.product_variants : [],
+  }));
 
   return (
     <div className="space-y-6">

@@ -1,3 +1,5 @@
+// 'use client';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { RevenueChart, type RevenuePoint } from '@/components/revenue-chart';
 import { createClient } from '@/lib/supabase/server';

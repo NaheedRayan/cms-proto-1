@@ -1,8 +1,8 @@
 import { CategoryForm } from '@/components/CategoryForm';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/client';
 
 export default async function NewCategoryPage() {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: billboards } = await supabase
     .from('billboards')
     .select('id, label')
