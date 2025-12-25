@@ -221,7 +221,6 @@ export function ProductForm({ initialData, categories, sizes, colors }: ProductF
         const { data: newProduct, error: productError } = await supabase
           .from('products')
           .insert({
-            user_id: session.user.id,
             name: data.name,
             description: data.description,
             price: data.price,
@@ -295,16 +294,34 @@ export function ProductForm({ initialData, categories, sizes, colors }: ProductF
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setLoading(true);
-      setTimeout(() => {
-        const fakeUrl = URL.createObjectURL(file);
+      try {
+        const sanitizedFileName = file.name.replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, "-").toLowerCase();
+        const fileName = `${Date.now()}-${sanitizedFileName}`;
+        
+        const { data, error } = await supabase.storage
+          .from('products')
+          .upload(fileName, file);
+
+        if (error) {
+          throw error;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('products')
+          .getPublicUrl(data.path);
+
         const currentImages = form.getValues('images') || [];
-        form.setValue('images', [...currentImages, fakeUrl]);
+        form.setValue('images', [...currentImages, publicUrl]);
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        alert('Failed to upload image.');
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     }
   };
 

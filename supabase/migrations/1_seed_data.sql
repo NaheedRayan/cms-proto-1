@@ -1,6 +1,15 @@
 -- ============================================================================
--- SEED DATA (Development)
+-- SEED DATA (Development) 
 -- ============================================================================
+
+
+
+-- also create a user with the following credentials:
+-- username: naheed28ray@gmail.com
+-- password: 123456789
+-- and assign the role of admin to the user
+
+
 
 do $$
 declare
@@ -9,7 +18,9 @@ declare
   v_product_id uuid;
   v_size_s uuid; v_size_m uuid; v_size_l uuid;
   v_color_white uuid; v_color_black uuid;
+  v_user_id uuid;
 begin
+ 
   -- Initialize Store Settings
   insert into public.store_settings (store_name, description)
   values ('Demo Store', 'A minimalist e-commerce experience')

@@ -68,7 +68,6 @@ export function BillboardForm({ billboardId, initialData }: BillboardFormProps) 
           .insert({ 
             label: data.label, 
             image_url: data.imageUrl,
-            user_id: session.user.id
           });
       }
       
@@ -81,13 +80,24 @@ export function BillboardForm({ billboardId, initialData }: BillboardFormProps) 
     }
   };
 
+
   const onDelete = async () => {
-    if (!billboardId) return;
+    if (!billboardId || !initialData) return;
     
     if (window.confirm("Are you sure you want to delete this billboard?")) {
       setLoading(true);
-      
       try {
+        // 1. Delete the image from storage
+        const url = initialData.imageUrl;
+        const fileName = url.split('/').pop();
+
+        if (fileName && !url.includes('unsplash.com')) {
+          await supabase.storage
+            .from('billboards')
+            .remove([fileName]);
+        }
+
+        // 2. Delete the record
         await supabase
           .from('billboards')
           .delete()
@@ -103,16 +113,32 @@ export function BillboardForm({ billboardId, initialData }: BillboardFormProps) 
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setLoading(true);
-      // Simulate upload - in production, upload to Supabase Storage
-      setTimeout(() => {
-        const fakeUrl = URL.createObjectURL(file);
-        form.setValue('imageUrl', fakeUrl);
+      try {
+        const sanitizedFileName = file.name.replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, "-").toLowerCase();
+        const fileName = `${Date.now()}-${sanitizedFileName}`;
+        const { data, error } = await supabase.storage
+          .from('billboards')
+          .upload(fileName, file);
+
+        if (error) {
+          throw error;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('billboards')
+          .getPublicUrl(data.path);
+
+        form.setValue('imageUrl', publicUrl);
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        alert('Failed to upload image.');
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     }
   };
 

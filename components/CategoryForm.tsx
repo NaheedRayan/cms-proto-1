@@ -70,7 +70,6 @@ export function CategoryForm({ categoryId, initialData, billboards }: CategoryFo
           .insert({ 
             name: data.name, 
             billboard_id: data.billboardId || null,
-            user_id: session.user.id
           });
       }
       

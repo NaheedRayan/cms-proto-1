@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { PlusCircle } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+// import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge } from '@/components/ui';
 
 interface Billboard {
@@ -11,7 +12,7 @@ interface Billboard {
 }
 
 export default async function BillboardsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: billboards } = await supabase
     .from('billboards')
     .select('id, label, image_url, created_at')
@@ -26,8 +27,8 @@ export default async function BillboardsPage() {
           <h1 className="text-3xl font-semibold">Billboards</h1>
           <p className="text-sm text-muted-foreground">Hero banners that power your storefront.</p>
         </div>
-        <Button asChild>
-          <Link href="/billboards/new" className="inline-flex items-center gap-2">
+        <Button asChild className="gap-2">
+          <Link href="/billboards/new" className="flex items-center">
             <PlusCircle className="h-4 w-4" />
             New billboard
           </Link>
