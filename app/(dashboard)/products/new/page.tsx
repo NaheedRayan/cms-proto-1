@@ -4,18 +4,15 @@ import { ProductForm } from '@/components/ProductForm';
 export default async function NewProductPage() {
   const supabase = createClient();
 
-  const [categoriesRes, colorsRes, sizesRes] = await Promise.all([
-    supabase.from('categories').select('*').order('name'),
-    supabase.from('colors').select('*').order('name'),
-    supabase.from('sizes').select('*').order('name'),
-  ]);
+  const { data: categories } = await supabase
+    .from('categories')
+    .select('id, name')
+    .order('name');
 
   return (
     <ProductForm
       initialData={null}
-      categories={categoriesRes.data ?? []}
-      colors={colorsRes.data ?? []}
-      sizes={sizesRes.data ?? []}
+      categories={categories ?? []}
     />
   );
 }

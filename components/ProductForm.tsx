@@ -16,13 +16,21 @@ const formSchema = z.object({
   price: z.coerce.number().min(0.01, "Price must be at least 0.01"),
   stock: z.coerce.number().min(0).default(0),
   categoryId: z.string().min(1, "Category is required"),
-  colorIds: z.array(z.string()).min(1, "At least one color is required"),
-  sizeIds: z.array(z.string()).min(1, "At least one size is required"),
+  colors: z.array(z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "Color name is required"),
+    value: z.string().regex(/^#[0-9A-F]{6}$/i, "Must be a valid hex color")
+  })).min(1, "At least one color is required"),
+  sizes: z.array(z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, "Size name is required"),
+    value: z.string().min(1, "Size value is required")
+  })).min(1, "At least one size is required"),
   tags: z.array(z.string()).default([]),
   metadata: z.array(z.object({ key: z.string().min(1), value: z.string().min(1) })).default([]),
   variants: z.array(z.object({
-    sizeId: z.string(),
-    colorId: z.string(),
+    sizeIndex: z.number(),
+    colorIndex: z.number(),
     stock: z.coerce.number().min(0)
   })).default([]),
   isFeatured: z.boolean().default(false),
@@ -37,13 +45,13 @@ interface Category {
 }
 
 interface Size {
-  id: string;
+  id?: string;
   name: string;
   value: string;
 }
 
 interface Color {
-  id: string;
+  id?: string;
   name: string;
   value: string;
 }
@@ -56,11 +64,11 @@ interface ProductFormData {
   stock: number;
   categoryId: string;
   images: string[];
-  sizeIds: string[];
-  colorIds: string[];
+  sizes: Size[];
+  colors: Color[];
   tags: string[];
   metadata: { key: string; value: string }[];
-  variants: { sizeId: string; colorId: string; stock: number }[];
+  variants: { sizeIndex: number; colorIndex: number; stock: number }[];
   isFeatured: boolean;
   isArchived: boolean;
 }
@@ -68,11 +76,9 @@ interface ProductFormData {
 interface ProductFormProps {
   initialData: ProductFormData | null;
   categories: Category[];
-  colors: Color[];
-  sizes: Size[];
 }
 
-export function ProductForm({ initialData, categories, sizes, colors }: ProductFormProps) {
+export function ProductForm({ initialData, categories }: ProductFormProps) {
   const router = useRouter();
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
@@ -90,8 +96,8 @@ export function ProductForm({ initialData, categories, sizes, colors }: ProductF
       price: parseFloat(String(initialData.price)),
       stock: initialData.stock || 0,
       images: initialData.images || [],
-      sizeIds: initialData.sizeIds || [],
-      colorIds: initialData.colorIds || [],
+      sizes: initialData.sizes || [],
+      colors: initialData.colors || [],
       tags: initialData.tags || [],
       metadata: initialData.metadata || [],
       variants: initialData.variants || [],
@@ -102,11 +108,11 @@ export function ProductForm({ initialData, categories, sizes, colors }: ProductF
       price: 0,
       stock: 0,
       categoryId: '',
-      colorIds: [],
-      sizeIds: [],
+      colors: [{ name: 'Default', value: '#000000' }],
+      sizes: [{ name: 'Default', value: 'One Size' }],
       tags: [],
       metadata: [],
-      variants: [],
+      variants: [{ sizeIndex: 0, colorIndex: 0, stock: 0 }],
       isFeatured: false,
       isArchived: false,
     }
@@ -117,35 +123,45 @@ export function ProductForm({ initialData, categories, sizes, colors }: ProductF
     name: "metadata"
   });
 
+  const { fields: sizeFields, append: appendSize, remove: removeSize } = useFieldArray({
+    control: form.control,
+    name: "sizes"
+  });
+
+  const { fields: colorFields, append: appendColor, remove: removeColor } = useFieldArray({
+    control: form.control,
+    name: "colors"
+  });
+
   // Watch for changes in sizes/colors to auto-generate variants
-  const selectedSizeIds = form.watch('sizeIds');
-  const selectedColorIds = form.watch('colorIds');
+  const watchedSizes = form.watch('sizes');
+  const watchedColors = form.watch('colors');
   const currentVariants = form.watch('variants') || [];
 
   useEffect(() => {
-    if (!selectedSizeIds || !selectedColorIds) return;
+    if (!watchedSizes || !watchedColors) return;
 
-    const newVariants: Array<{ sizeId: string; colorId: string; stock: number }> = [];
+    const newVariants: Array<{ sizeIndex: number; colorIndex: number; stock: number }> = [];
     
-    selectedSizeIds.forEach((sizeId: string) => {
-      selectedColorIds.forEach((colorId: string) => {
-        const existing = currentVariants.find((v) => v.sizeId === sizeId && v.colorId === colorId);
+    watchedSizes.forEach((_, sIdx) => {
+      watchedColors.forEach((_, cIdx) => {
+        const existing = currentVariants.find((v) => v.sizeIndex === sIdx && v.colorIndex === cIdx);
         if (existing) {
           newVariants.push(existing);
         } else {
-          newVariants.push({ sizeId, colorId, stock: 0 });
+          newVariants.push({ sizeIndex: sIdx, colorIndex: cIdx, stock: 0 });
         }
       });
     });
 
     const isDifferent = newVariants.length !== currentVariants.length || 
-                        !newVariants.every((nv) => currentVariants.some((cv) => cv.sizeId === nv.sizeId && cv.colorId === nv.colorId));
+                        !newVariants.every((nv) => currentVariants.some((cv) => cv.sizeIndex === nv.sizeIndex && cv.colorIndex === nv.colorIndex));
 
     if (isDifferent) {
       form.setValue('variants', newVariants);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(selectedSizeIds), JSON.stringify(selectedColorIds)]);
+  }, [JSON.stringify(watchedSizes), JSON.stringify(watchedColors)]);
 
   const onSubmit = async (data: ProductFormValues) => {
     try {
@@ -163,6 +179,8 @@ export function ProductForm({ initialData, categories, sizes, colors }: ProductF
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
+      let productId = initialData?.id;
+
       if (initialData) {
         // Update product
         await supabase
@@ -178,44 +196,6 @@ export function ProductForm({ initialData, categories, sizes, colors }: ProductF
             metadata: metadataObj,
           })
           .eq('id', initialData.id);
-
-        // Update images (delete old, insert new)
-        await supabase
-          .from('product_images')
-          .delete()
-          .eq('product_id', initialData.id);
-
-        if (data.images.length > 0) {
-          await supabase
-            .from('product_images')
-            .insert(
-              data.images.map((url, idx) => ({
-                product_id: initialData.id,
-                url,
-                position: idx,
-                is_primary: idx === 0,
-              }))
-            );
-        }
-
-        // Update variants
-        await supabase
-          .from('product_variants')
-          .delete()
-          .eq('product_id', initialData.id);
-
-        if (data.variants.length > 0) {
-          await supabase
-            .from('product_variants')
-            .insert(
-              data.variants.map((v) => ({
-                product_id: initialData.id,
-                size_id: v.sizeId,
-                color_id: v.colorId,
-                stock: v.stock,
-              }))
-            );
-        }
       } else {
         // Create new product
         const { data: newProduct, error: productError } = await supabase
@@ -234,34 +214,52 @@ export function ProductForm({ initialData, categories, sizes, colors }: ProductF
           .single();
 
         if (productError || !newProduct) throw productError;
+        productId = newProduct.id;
+      }
 
-        // Insert images
-        if (data.images.length > 0) {
-          await supabase
-            .from('product_images')
-            .insert(
-              data.images.map((url, idx) => ({
-                product_id: newProduct.id,
-                url,
-                position: idx,
-                is_primary: idx === 0,
-              }))
-            );
-        }
+      if (!productId) throw new Error("No product ID");
 
-        // Insert variants
-        if (data.variants.length > 0) {
-          await supabase
-            .from('product_variants')
-            .insert(
-              data.variants.map((v) => ({
-                product_id: newProduct.id,
-                size_id: v.sizeId,
-                color_id: v.colorId,
-                stock: v.stock,
-              }))
-            );
-        }
+      // Update images
+      await supabase.from('product_images').delete().eq('product_id', productId);
+      if (data.images.length > 0) {
+        await supabase.from('product_images').insert(
+          data.images.map((url, idx) => ({
+            product_id: productId,
+            url,
+            position: idx,
+            is_primary: idx === 0,
+          }))
+        );
+      }
+
+      // Update sizes and colors (scoped to product)
+      await supabase.from('sizes').delete().eq('product_id', productId);
+      await supabase.from('colors').delete().eq('product_id', productId);
+
+      const { data: newSizes, error: sizesError } = await supabase
+        .from('sizes')
+        .insert(data.sizes.map(s => ({ product_id: productId, name: s.name, value: s.value })))
+        .select();
+      
+      const { data: newColors, error: colorsError } = await supabase
+        .from('colors')
+        .insert(data.colors.map(c => ({ product_id: productId, name: c.name, value: c.value })))
+        .select();
+
+      if (sizesError) throw sizesError;
+      if (colorsError) throw colorsError;
+
+      // Update variants using the new size/color IDs
+      await supabase.from('product_variants').delete().eq('product_id', productId);
+      if (data.variants.length > 0 && newSizes && newColors) {
+        await supabase.from('product_variants').insert(
+          data.variants.map((v) => ({
+            product_id: productId,
+            size_id: newSizes[v.sizeIndex].id,
+            color_id: newColors[v.colorIndex].id,
+            stock: v.stock,
+          }))
+        );
       }
       
       router.push('/products');
@@ -328,16 +326,6 @@ export function ProductForm({ initialData, categories, sizes, colors }: ProductF
   const removeImage = (urlToRemove: string) => {
     const currentImages = form.getValues('images') || [];
     form.setValue('images', currentImages.filter((url: string) => url !== urlToRemove));
-  };
-
-  const toggleSelection = (field: 'sizeIds' | 'colorIds', id: string) => {
-    const current = form.getValues(field) || [];
-    if (current.includes(id)) {
-      form.setValue(field, current.filter((item: string) => item !== id));
-    } else {
-      form.setValue(field, [...current, id]);
-    }
-    form.trigger(field);
   };
 
   const handleAddTag = (e: React.KeyboardEvent) => {
@@ -445,49 +433,64 @@ export function ProductForm({ initialData, categories, sizes, colors }: ProductF
         
         <div className="grid gap-8 md:grid-cols-2">
           {/* Sizes */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium leading-none">Sizes</label>
-            <div className="flex flex-wrap gap-2">
-              {sizes.map((size) => {
-                const isSelected = form.watch('sizeIds')?.includes(size.id);
-                return (
-                  <div 
-                    key={size.id} 
-                    onClick={() => toggleSelection('sizeIds', size.id)}
-                    className={`cursor-pointer rounded-md border px-3 py-2 text-sm font-semibold transition-all ${isSelected ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted'}`}
-                  >
-                    {size.name}
-                  </div>
-                );
-              })}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium leading-none">Sizes</label>
+              <Button type="button" variant="outline" size="sm" onClick={() => appendSize({ name: "", value: "" })}>
+                <Plus className="mr-2 h-4 w-4" /> Add Size
+              </Button>
             </div>
-            {form.formState.errors.sizeIds && <p className="text-xs text-destructive">{form.formState.errors.sizeIds.message as string}</p>}
+            {sizeFields.map((field, index) => (
+              <div key={field.id} className="flex gap-2 items-start">
+                <Input {...form.register(`sizes.${index}.name`)} placeholder="Label (e.g. Small)" className="flex-1" />
+                <Input {...form.register(`sizes.${index}.value`)} placeholder="Value (e.g. S)" className="flex-1" />
+                {sizeFields.length > 1 && (
+                  <Button type="button" variant="destructive" size="icon" onClick={() => removeSize(index)}>
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            {form.formState.errors.sizes && <p className="text-xs text-destructive">{form.formState.errors.sizes.message}</p>}
           </div>
 
           {/* Colors */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium leading-none">Colors</label>
-            <div className="flex flex-wrap gap-2">
-              {colors.map((color) => {
-                const isSelected = form.watch('colorIds')?.includes(color.id);
-                return (
-                  <div 
-                    key={color.id} 
-                    onClick={() => toggleSelection('colorIds', color.id)}
-                    className={`flex items-center gap-2 cursor-pointer rounded-md border px-3 py-2 text-sm font-semibold transition-all ${isSelected ? 'bg-secondary border-primary' : 'bg-background hover:bg-muted'}`}
-                  >
-                    <div className="h-4 w-4 rounded-full border" style={{ backgroundColor: color.value }} />
-                    {color.name}
-                  </div>
-                );
-              })}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium leading-none">Colors</label>
+              <Button type="button" variant="outline" size="sm" onClick={() => appendColor({ name: "", value: "#000000" })}>
+                <Plus className="mr-2 h-4 w-4" /> Add Color
+              </Button>
             </div>
-            {form.formState.errors.colorIds && <p className="text-xs text-destructive">{form.formState.errors.colorIds.message as string}</p>}
+            {colorFields.map((field, index) => (
+              <div key={field.id} className="flex gap-2 items-start">
+                <Input {...form.register(`colors.${index}.name`)} placeholder="Label (e.g. Red)" className="flex-1" />
+                <div className="flex-1 flex gap-2">
+                  <Input 
+                    type="color" 
+                    value={form.watch(`colors.${index}.value`)}
+                    onChange={(e) => form.setValue(`colors.${index}.value`, e.target.value)}
+                    className="w-12 p-1 h-9 cursor-pointer" 
+                  />
+                  <Input 
+                    {...form.register(`colors.${index}.value`)} 
+                    placeholder="#FF0000" 
+                    className="flex-1" 
+                  />
+                </div>
+                {colorFields.length > 1 && (
+                  <Button type="button" variant="destructive" size="icon" onClick={() => removeColor(index)}>
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            {form.formState.errors.colors && <p className="text-xs text-destructive">{form.formState.errors.colors.message}</p>}
           </div>
         </div>
 
         {/* DYNAMIC INVENTORY MATRIX */}
-        {form.watch('variants') && (form.watch('variants') || []).length > 0 && (
+        {(form.watch('variants') || []).length > 0 && (
           <div className="space-y-4 rounded-lg border p-4 bg-muted/10">
             <div className="flex items-center gap-2">
               <Box className="h-5 w-5 text-muted-foreground" />
@@ -508,15 +511,15 @@ export function ProductForm({ initialData, categories, sizes, colors }: ProductF
                 </thead>
                 <tbody>
                   {form.watch('variants')?.map((variant, index: number) => {
-                    const size = sizes.find(s => s.id === variant.sizeId);
-                    const color = colors.find(c => c.id === variant.colorId);
+                    const size = watchedSizes[variant.sizeIndex];
+                    const color = watchedColors[variant.colorIndex];
                     return (
-                      <tr key={`${variant.sizeId}-${variant.colorId}`} className="border-b last:border-0">
-                        <td className="px-4 py-2 font-medium">{size?.name || 'Unknown'}</td>
+                      <tr key={`${variant.sizeIndex}-${variant.colorIndex}`} className="border-b last:border-0">
+                        <td className="px-4 py-2 font-medium">{size?.name || 'New Size'}</td>
                         <td className="px-4 py-2">
                           <div className="flex items-center gap-2">
                             <div className="h-3 w-3 rounded-full border" style={{ backgroundColor: color?.value }} />
-                            {color?.name || 'Unknown'}
+                            {color?.name || 'New Color'}
                           </div>
                         </td>
                         <td className="px-4 py-2">

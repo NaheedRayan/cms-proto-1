@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { ProductForm } from '@/components/ProductForm';
 
 interface PageProps {
@@ -7,7 +7,7 @@ interface PageProps {
 }
 
 export default async function EditProductPage({ params }: PageProps) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [productRes, categoriesRes, colorsRes, sizesRes] = await Promise.all([
     supabase
@@ -30,8 +30,8 @@ export default async function EditProductPage({ params }: PageProps) {
       .eq('id', params.productId)
       .maybeSingle(),
     supabase.from('categories').select('*').order('name'),
-    supabase.from('colors').select('*').order('name'),
-    supabase.from('sizes').select('*').order('name'),
+    supabase.from('colors').select('*').eq('product_id', params.productId).order('created_at'),
+    supabase.from('sizes').select('*').eq('product_id', params.productId).order('created_at'),
   ]);
 
   if (!productRes.data) {
@@ -47,8 +47,8 @@ export default async function EditProductPage({ params }: PageProps) {
     stock: number;
   }>) ?? [];
 
-  const sizeIds = Array.from(new Set(variants.map((v) => v.size_id).filter(Boolean))) as string[];
-  const colorIds = Array.from(new Set(variants.map((v) => v.color_id).filter(Boolean))) as string[];
+  const sizes = (sizesRes.data ?? []) as Array<{ id: string; name: string; value: string }>;
+  const colors = (colorsRes.data ?? []) as Array<{ id: string; name: string; value: string }>;
   
   const metadata = Object.entries((product.metadata as Record<string, string>) || {}).map(
     ([key, value]) => ({ key, value })
@@ -64,21 +64,19 @@ export default async function EditProductPage({ params }: PageProps) {
         stock: product.stock_cached || 0,
         categoryId: product.category_id || '',
         images,
-        sizeIds,
-        colorIds,
+        sizes,
+        colors,
         tags: [],
         metadata,
         variants: variants.map((v) => ({
-          sizeId: v.size_id || '',
-          colorId: v.color_id || '',
+          sizeIndex: sizes.findIndex(s => s.id === v.size_id),
+          colorIndex: colors.findIndex(c => c.id === v.color_id),
           stock: v.stock,
-        })),
+        })).filter(v => v.sizeIndex !== -1 && v.colorIndex !== -1),
         isFeatured: product.is_featured,
         isArchived: product.is_archived,
       }}
       categories={categoriesRes.data ?? []}
-      colors={colorsRes.data ?? []}
-      sizes={sizesRes.data ?? []}
     />
   );
 }

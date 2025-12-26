@@ -14,7 +14,7 @@ interface Product {
   is_archived: boolean;
   created_at: string;
   updated_at: string;
-  category: { name: string } | null;
+  category: { name: string, id: string } | null;
   image: string | null;
 }
 

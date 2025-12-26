@@ -19,8 +19,8 @@ export default async function ProductsPage() {
       created_at,
       updated_at,
       metadata,
-      category:categories(name),
-      product_images(url)
+      category:categories(name, id),
+      product_images(url, id)
     `,
     )
     .order('updated_at', { ascending: false });
