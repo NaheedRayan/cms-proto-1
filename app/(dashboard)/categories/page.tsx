@@ -7,18 +7,16 @@ interface Category {
   id: string;
   name: string;
   created_at: string;
-  billboard: { label: string } | null;
 }
 
 export default async function CategoriesPage() {
   const supabase = await createClient();
-  const { data: categories } = await supabase
+  const { data: categories, error } = await supabase
     .from('categories')
     .select(`
       id,
       name,
-      created_at,
-      billboard:billboards(label)
+      created_at
     `)
     .order('name', { ascending: true });
 
@@ -33,7 +31,7 @@ export default async function CategoriesPage() {
             Organize your product catalog with categories.
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="gap-2">
           <Link href="/categories/new" className="inline-flex items-center gap-2">
             <PlusCircle className="h-4 w-4" />
             New category
@@ -50,14 +48,20 @@ export default async function CategoriesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-muted-foreground">
+                  <th className='py-2'>Id</th>
                   <th className="py-2">Name</th>
-                  <th className="py-2">Billboard</th>
                   <th className="py-2">Created</th>
                 </tr>
               </thead>
               <tbody>
                 {typedCategories.map((category) => (
                   <tr key={category.id} className="border-t">
+
+                    <td className="py-3">
+                      <Badge variant="outline">
+                        {category.id}
+                      </Badge>
+                    </td>
                     <td className="py-3">
                       <Link
                         href={`/categories/${category.id}`}
@@ -65,13 +69,6 @@ export default async function CategoriesPage() {
                       >
                         {category.name}
                       </Link>
-                    </td>
-                    <td className="py-3">
-                      {category.billboard?.label ? (
-                        <Badge variant="secondary">{category.billboard.label}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
                     </td>
                     <td className="py-3 text-muted-foreground">
                       {new Date(category.created_at).toLocaleDateString()}

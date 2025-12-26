@@ -11,23 +11,17 @@ import { createClient } from '@/lib/supabase/client';
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  billboardId: z.string().optional(),
+  created_at: z.string().optional(),
 });
 
 type CategoryFormValues = z.infer<typeof formSchema>;
 
-interface Billboard {
-  id: string;
-  label: string;
-}
-
 interface CategoryFormProps {
   categoryId?: string;
-  initialData: { name: string; billboardId: string } | null;
-  billboards: Billboard[];
+  initialData: { name: string, created_at: string } | null;
 }
 
-export function CategoryForm({ categoryId, initialData, billboards }: CategoryFormProps) {
+export function CategoryForm({ categoryId, initialData }: CategoryFormProps) {
   const router = useRouter();
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
@@ -40,10 +34,10 @@ export function CategoryForm({ categoryId, initialData, billboards }: CategoryFo
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
       name: initialData.name,
-      billboardId: initialData.billboardId || '',
+      created_at: initialData.created_at,
     } : {
       name: '',
-      billboardId: '',
+      created_at: new Date().toISOString(),
     }
   });
 
@@ -57,7 +51,6 @@ export function CategoryForm({ categoryId, initialData, billboards }: CategoryFo
           .from('categories')
           .update({ 
             name: data.name, 
-            billboard_id: data.billboardId || null
           })
           .eq('id', categoryId);
       } else {
@@ -69,7 +62,6 @@ export function CategoryForm({ categoryId, initialData, billboards }: CategoryFo
           .from('categories')
           .insert({ 
             name: data.name, 
-            billboard_id: data.billboardId || null,
           });
       }
       
@@ -132,25 +124,6 @@ export function CategoryForm({ categoryId, initialData, billboards }: CategoryFo
               {form.formState.errors.name.message}
             </p>
           )}
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium leading-none">Billboard (Optional)</label>
-          <select 
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            {...form.register('billboardId')}
-            disabled={loading}
-          >
-            <option value="">No billboard</option>
-            {billboards.map((billboard) => (
-              <option key={billboard.id} value={billboard.id}>
-                {billboard.label}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-muted-foreground">
-            Select a billboard to display as the category header on your storefront.
-          </p>
         </div>
 
         <Button disabled={loading} type="submit">

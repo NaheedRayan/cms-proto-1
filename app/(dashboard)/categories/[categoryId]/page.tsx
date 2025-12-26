@@ -9,30 +9,23 @@ interface PageProps {
 export default async function EditCategoryPage({ params }: PageProps) {
   const supabase = await createClient();
   
-  const [categoryRes, billboardsRes] = await Promise.all([
-    supabase
-      .from('categories')
-      .select('id, name, billboard_id')
-      .eq('id', params.categoryId)
-      .maybeSingle(),
-    supabase
-      .from('billboards')
-      .select('id, label')
-      .order('label'),
-  ]);
+  const { data: category } = await supabase
+    .from('categories')
+    .select('id, name, created_at')
+    .eq('id', params.categoryId)
+    .maybeSingle();
 
-  if (!categoryRes.data) {
+  if (!category) {
     notFound();
   }
 
   return (
     <CategoryForm
-      categoryId={categoryRes.data.id}
+      categoryId={category.id}
       initialData={{
-        name: categoryRes.data.name,
-        billboardId: categoryRes.data.billboard_id ?? '',
+        name: category.name,
+        created_at: category.created_at,
       }}
-      billboards={billboardsRes.data ?? []}
     />
   );
 }
