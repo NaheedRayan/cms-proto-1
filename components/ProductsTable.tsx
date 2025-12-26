@@ -12,7 +12,10 @@ interface Product {
   stock_cached: number;
   is_featured: boolean;
   is_archived: boolean;
+  created_at: string;
+  updated_at: string;
   category: { name: string } | null;
+  image: string | null;
 }
 
 interface ProductsTableProps {
@@ -51,13 +54,15 @@ export function ProductsTable({ products }: ProductsTableProps) {
               <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Price</th>
               <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Stock</th>
               <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Featured</th>
+              <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Created At</th>
+              <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Updated At</th>
               <th className="h-12 px-4 align-middle font-medium text-muted-foreground text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="[&_tr:last-child]:border-0">
             {filteredProducts.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-4 text-center text-muted-foreground">
+                <td colSpan={9} className="p-4 text-center text-muted-foreground">
                   No products found.
                 </td>
               </tr>
@@ -69,7 +74,15 @@ export function ProductsTable({ products }: ProductsTableProps) {
                 >
                   <td className="p-4 align-middle">
                     <div className="h-12 w-12 rounded-md overflow-hidden bg-muted border flex items-center justify-center">
-                      <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                      {product.image ? (
+                        <img 
+                          src={product.image} 
+                          alt={product.name} 
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                      )}
                     </div>
                   </td>
                   <td className="p-4 font-medium">{product.name}</td>
@@ -89,6 +102,8 @@ export function ProductsTable({ products }: ProductsTableProps) {
                   <td className="p-4">
                     {product.is_featured ? <Check className="h-4 w-4 text-green-500" /> : '-'}
                   </td>
+                  <td className="p-4">{new Date(product.created_at).toLocaleDateString()}</td>
+                  <td className="p-4">{new Date(product.updated_at).toLocaleDateString()}</td>
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" size="icon" asChild>

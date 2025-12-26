@@ -16,15 +16,19 @@ export default async function ProductsPage() {
       stock_cached,
       is_featured,
       is_archived,
+      created_at,
       updated_at,
-      category:categories(name)
+      metadata,
+      category:categories(name),
+      product_images(url)
     `,
     )
     .order('updated_at', { ascending: false });
 
-  const products = productsData?.map((product) => ({
+  const products = productsData?.map((product: any) => ({
     ...product,
     category: Array.isArray(product.category) ? product.category[0] : product.category,
+    image: Array.isArray(product.product_images) && product.product_images.length > 0 ? product.product_images[0].url : null,
   }));
 
   return (
@@ -36,7 +40,7 @@ export default async function ProductsPage() {
             Manage everything from featured listings to archived inventory with client-side search and filters.
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="gap-2">
           <Link href="/products/new" className="inline-flex items-center gap-2">
             <PlusCircle className="h-4 w-4" />
             New product
