@@ -2,8 +2,8 @@
 import React from 'react';
 import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
-export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'; size?: 'default' | 'sm' | 'lg' | 'icon'; asChild?: boolean }>(
-  ({ className = '', variant = 'default', size = 'default', children, disabled, asChild = false, ...props }, ref) => {
+export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'; size?: 'default' | 'sm' | 'lg' | 'icon'; asChild?: boolean; loading?: boolean }>(
+  ({ className = '', variant = 'default', size = 'default', children, disabled, asChild = false, loading = false, ...props }, ref) => {
     const baseStyles = "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50";
     const variants = {
       default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
@@ -32,11 +32,11 @@ export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttrib
     return (
       <button
         ref={ref}
-        disabled={disabled}
+        disabled={disabled || loading}
         className={classes}
         {...props}
       >
-        {disabled && variant === 'default' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         {children}
       </button>
     );

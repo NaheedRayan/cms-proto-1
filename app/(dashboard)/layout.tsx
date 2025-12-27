@@ -9,24 +9,24 @@ interface DashboardLayoutProps {
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+
+  const { data } = await supabase.auth.getClaims()
+  const claims = data?.claims
+  const user = claims
 
   if (!user) {
     redirect('/auth/login');
   }
-
   // Get user settings for branding
   const { data: settings } = await supabase
     .from('user_settings')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', user?.id)
     .maybeSingle();
 
   return (
     <DashboardShell
-      settings={settings || { store_name: 'My Store', logo_url: null }}
+      settings={settings || { store_name: 'My Store', logo_url: null , user_email: user?.email}}
     >
       {children}
     </DashboardShell>

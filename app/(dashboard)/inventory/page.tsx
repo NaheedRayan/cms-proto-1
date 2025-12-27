@@ -1,11 +1,11 @@
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { InventoryClient, Product } from '@/components/inventory-client';
 
 export default async function InventoryPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   // Fetch products with variants
-  const { data: productsData } = await supabase
+  const { data: productsData, error } = await supabase
     .from('products')
     .select(`
       id,
@@ -21,19 +21,18 @@ export default async function InventoryPage() {
     `)
     .order('name');
 
-  // Fetch sizes and colors for reference
-  const [{ data: sizes }, { data: colors }] = await Promise.all([
-    supabase.from('sizes').select('id, name, value').order('name'),
-    supabase.from('colors').select('id, name, value').order('name'),
-  ]);
+  if (error) {
+    console.error('[INVENTORY_PAGE_ERROR]:', error);
+  }
 
-  const products = productsData?.map((product) => ({
+  const products = (productsData ?? []).map((product: any) => ({
     ...product,
+    product_images: Array.isArray(product.product_images) ? product.product_images : [],
     product_variants: Array.isArray(product.product_variants) ? product.product_variants : [],
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-4">
       <div>
         <h1 className="text-3xl font-semibold">Inventory</h1>
         <p className="text-sm text-muted-foreground">
@@ -42,9 +41,7 @@ export default async function InventoryPage() {
       </div>
 
       <InventoryClient 
-        products={(products ?? []) as unknown as Product[]} 
-        sizes={sizes || []} 
-        colors={colors || []} 
+        products={products as unknown as Product[]} 
       />
     </div>
   );

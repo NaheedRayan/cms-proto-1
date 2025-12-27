@@ -33,11 +33,9 @@ export interface Product {
 
 interface InventoryClientProps {
   products: Product[];
-  sizes: { id: string; name: string; value: string }[];
-  colors: { id: string; name: string; value: string }[];
 }
 
-export function InventoryClient({ products, sizes, colors }: InventoryClientProps) {
+export function InventoryClient({ products }: InventoryClientProps) {
   const router = useRouter();
   const supabase = createClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -138,10 +136,10 @@ export function InventoryClient({ products, sizes, colors }: InventoryClientProp
 
   return (
     <Card>
-      <CardContent className="p-6 space-y-6">
+      <CardContent className="p-6 pt-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="relative max-w-sm w-full">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
               placeholder="Search by product or variant..." 
               value={searchTerm}
@@ -149,8 +147,8 @@ export function InventoryClient({ products, sizes, colors }: InventoryClientProp
               className="pl-8"
             />
           </div>
-          <Button onClick={saveChanges} disabled={!hasChanges || saving}>
-            {saving ? 'Saving...' : 'Save Changes'}
+          <Button onClick={saveChanges} disabled={!hasChanges} loading={saving}>
+            Save Changes
             <Save className="ml-2 h-4 w-4" />
           </Button>
         </div>

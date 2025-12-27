@@ -16,19 +16,24 @@ import {
 import { Button } from './ui';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 interface DashboardShellProps {
   children: React.ReactNode;
   settings: {
     store_name: string;
     logo_url: string | null;
+    user_email: string | null;
   };
 }
+
+
 
 export function DashboardShell({ children, settings }: DashboardShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+
 
   const routes = [
     {
@@ -125,9 +130,9 @@ export function DashboardShell({ children, settings }: DashboardShellProps) {
       <main className="flex-1 overflow-y-auto">
         <header className="flex h-16 items-center border-b px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
           <div className="ml-auto flex items-center space-x-4">
-            <div className="text-sm text-muted-foreground">Admin User</div>
+            <div className="text-sm text-muted-foreground">{settings.user_email}</div>
             <div className="h-8 w-8 rounded-full bg-secondary border flex items-center justify-center">
-              <span className="text-xs font-bold">AD</span>
+              <span className="text-xs font-bold">{settings.user_email?.charAt(0).toUpperCase()}</span>
             </div>
           </div>
         </header>
