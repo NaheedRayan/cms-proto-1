@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
 type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
-type PaymentMethod = 'cod' | 'card' | 'bkash';
+type PaymentMethod = 'cod' | 'card' | 'mbank';
 
 interface Order {
   id: string;
