@@ -18,15 +18,15 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     redirect('/auth/login');
   }
   // Get user settings for branding
-  const { data: settings } = await supabase
-    .from('user_settings')
+  const { data: storeSettings } = await supabase
+    .from('store_settings')
     .select('*')
     .eq('user_id', user?.id)
     .maybeSingle();
 
   return (
     <DashboardShell
-      settings={settings || { store_name: 'My Store', logo_url: null , user_email: user?.email}}
+      settings={storeSettings || { store_name: storeSettings?.store_name, logo_url: storeSettings?.logo_url , user_email: user?.email}}
     >
       {children}
     </DashboardShell>

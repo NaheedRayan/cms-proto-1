@@ -1,29 +1,20 @@
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { SettingsClient } from '@/components/settings-client';
 import { redirect } from 'next/navigation';
 
 export default async function SettingsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     redirect('/auth/login');
   }
 
-  const { data: settingsData } = await supabase
-    .from('user_settings')
+  const { data: settings } = await supabase
+    .from('store_settings')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('id', 1)
     .single();
-
-  const settings = settingsData?.map((setting: any) => ({
-    ...setting,
-    user_id: setting.user_id,
-    store_name: setting.store_name,
-    description: setting.description,
-    logo_url: setting.logo_url,
-    support_email: setting.support_email,
-  }));
 
   return (
     <div className="space-y-6">

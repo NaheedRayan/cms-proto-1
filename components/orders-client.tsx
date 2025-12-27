@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
-import { Badge, Input, Card, CardContent, Separator } from './ui';
+import { Badge, Input, Card, CardContent, Separator, Button } from './ui';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -108,19 +108,20 @@ export function OrdersClient({ orders: initialOrders }: OrdersClientProps) {
                 <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Customer</th>
                 <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Total</th>
                 <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Date</th>
+                <th className="h-12 px-4 align-middle font-medium text-muted-foreground text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="[&_tr:last-child]:border-0">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-4 text-center text-muted-foreground">
+                  <td colSpan={8} className="p-4 text-center text-muted-foreground">
                     No orders found.
                   </td>
                 </tr>
               ) : (
                 filteredOrders.map((order) => (
                   <tr key={order.id} className="border-b transition-colors hover:bg-muted/50">
-                    <td className="p-4 font-mono text-xs">{order.id.slice(0, 8)}</td>
+                    <td className="p-4 font-mono text-xs">{order.id}</td>
                     <td className="p-4">
                       <Badge variant="secondary" className="font-normal text-xs uppercase">
                         {order.payment_method}
@@ -161,6 +162,15 @@ export function OrdersClient({ orders: initialOrders }: OrdersClientProps) {
                     <td className="p-4 font-semibold">${Number(order.total_price).toFixed(2)}</td>
                     <td className="p-4 text-muted-foreground">
                       {new Date(order.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="p-4 text-right">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => router.push(`/orders/${order.id}`)}
+                      >
+                        Edit
+                      </Button>
                     </td>
                   </tr>
                 ))

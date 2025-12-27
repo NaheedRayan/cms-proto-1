@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
 interface Settings {
-  user_id: string;
+  id: number;
   store_name: string;
   description: string | null;
   logo_url: string | null;
@@ -36,9 +36,9 @@ export function SettingsClient({ settings, userId }: SettingsClientProps) {
     
     try {
       await supabase
-        .from('user_settings')
+        .from('store_settings')
         .upsert({
-          user_id: userId,
+          id: 1,
           store_name: name,
           description,
           support_email: supportEmail,
@@ -62,11 +62,11 @@ export function SettingsClient({ settings, userId }: SettingsClientProps) {
 
     setLoading(true);
     try {
-      // Delete user settings (cascade will handle related data)
+      // Delete store settings (cascade will handle related data)
       await supabase
-        .from('user_settings')
+        .from('store_settings')
         .delete()
-        .eq('user_id', userId);
+        .eq('id', 1);
       
       // Sign out and redirect
       await supabase.auth.signOut();
