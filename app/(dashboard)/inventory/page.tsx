@@ -32,7 +32,7 @@ export default async function InventoryPage() {
   }));
 
   return (
-    <div className="space-y-6 pt-4">
+    <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold">Inventory</h1>
         <p className="text-sm text-muted-foreground">
